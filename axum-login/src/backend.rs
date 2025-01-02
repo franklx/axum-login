@@ -4,7 +4,6 @@ use std::{
     hash::Hash,
 };
 
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 /// Type alias for the backend user's ID.
@@ -67,7 +66,6 @@ pub trait AuthUser: Debug + Clone + Send + Sync {
 /// ```rust
 /// use std::collections::HashMap;
 ///
-/// use async_trait::async_trait;
 /// use axum_login::{AuthUser, AuthnBackend, UserId};
 ///
 /// #[derive(Debug, Clone)]
@@ -98,7 +96,6 @@ pub trait AuthUser: Debug + Clone + Send + Sync {
 ///     user_id: i64,
 /// }
 ///
-/// #[async_trait]
 /// impl AuthnBackend for Backend {
 ///     type User = User;
 ///     type Credentials = Credentials;
@@ -119,7 +116,6 @@ pub trait AuthUser: Debug + Clone + Send + Sync {
 ///     }
 /// }
 /// ```
-#[async_trait]
 pub trait AuthnBackend: Clone + Send + Sync {
     /// Authenticating user type.
     type User: AuthUser;
@@ -137,13 +133,12 @@ pub trait AuthnBackend: Clone + Send + Sync {
     ) -> Result<Option<Self::User>, Self::Error>;
 
     /// Gets the user by provided ID from the backend.
-    async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error>;
+    fn get_user(&self, user_id: &UserId<Self>) -> impl std::future::Future<Output = Result<Option<Self::User>, Self::Error>> + Send;
 }
 
 /// A backend which can authorize users.
 ///
 /// Backends must implement `AuthnBackend`.
-#[async_trait]
 pub trait AuthzBackend
 where
     Self: AuthnBackend,
@@ -252,7 +247,6 @@ mod tests {
         }
     }
 
-    #[async_trait]
     impl AuthnBackend for TestBackend {
         type User = TestUser;
         type Credentials = i64; // Simplified for testing
@@ -273,7 +267,6 @@ mod tests {
         }
     }
 
-    #[async_trait]
     impl AuthzBackend for TestBackend {
         type Permission = String;
 

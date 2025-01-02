@@ -1,6 +1,6 @@
 [package]
 name = "axum-login"
-version = "0.16.0"
+version = "0.16.0+frk.1"
 description = "🪪 User identification, authentication, and authorization for Axum."
 edition = "2021"
 homepage = "https://github.com/maxcountryman/axum-login"
@@ -16,30 +16,31 @@ repository = "https://github.com/maxcountryman/axum-login"
 documentation = "https://docs.rs/axum-login"
 readme = "../README.md"
 
+publish = ["elleci"]
+
 [dependencies]
-async-trait = "0.1.57"
-axum = { version = "0.7.1", default-features = false, features = [
+axum = { version = "0.8", default-features = false, features = [
     "original-uri",
 ] }
-subtle = "2.5.0"
+subtle = "2"
 serde = "1"
-thiserror = "1.0.49"
-tower-cookies = "0.10.0"
-tower-layer = "0.3.2"
-tower-service = "0.3.2"
-tower-sessions = "0.13.0"
-tracing = { version = "0.1.40", features = ["log"] }
-urlencoding = "2.1.3"
-form_urlencoded = "1.2.1"
+thiserror = "2"
+tower-cookies = "0.11"
+tower-layer = "0.3"
+tower-service = "0.3"
+tower-sessions = "0.14"
+tracing = { version = "0.1", features = ["log"] }
+urlencoding = "2"
+form_urlencoded = "1"
 
 [dev-dependencies]
-axum = "0.7.0"
-mockall = "0.12"
+axum = "0.8"
+mockall = "0.13"
 reqwest = { version = "0.12", features = ["cookies"] }
-serial_test = "3.0.0"
-time = "0.3.36"
-tokio = { version = "1.32.0", features = ["full"] }
-tokio-test = "0.4.3"
-tower = "0.4.13"
-tower-sessions = { version = "0.13.0" }
-tower-sessions-sqlx-store = { version = "0.14.0", features = ["sqlite"] }
+serial_test = "3"
+time = "0.3"
+tokio = { version = "1", features = ["full"] }
+tokio-test = "0.4"
+tower = "0.5"
+tower-sessions = { version = "0.14" }
+tower-sessions-sqlx-store = { version = "0.15", features = ["sqlite"] }
