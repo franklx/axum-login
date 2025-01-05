@@ -127,10 +127,10 @@ pub trait AuthnBackend: Clone + Send + Sync {
     type Error: std::error::Error + Send + Sync;
 
     /// Authenticates the given credentials with the backend.
-    async fn authenticate(
+    fn authenticate(
         &self,
         creds: Self::Credentials,
-    ) -> Result<Option<Self::User>, Self::Error>;
+    ) -> impl std::future::Future<Output = Result<Option<Self::User>, Self::Error>> + Send;
 
     /// Gets the user by provided ID from the backend.
     fn get_user(&self, user_id: &UserId<Self>) -> impl std::future::Future<Output = Result<Option<Self::User>, Self::Error>> + Send;
@@ -147,41 +147,41 @@ where
     type Permission: Hash + Eq + Send + Sync;
 
     /// Gets the permissions for the provided user.
-    async fn get_user_permissions(
+    fn get_user_permissions(
         &self,
         _user: &Self::User,
-    ) -> Result<HashSet<Self::Permission>, Self::Error> {
+    ) -> impl std::future::Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {async {
         Ok(HashSet::new())
-    }
+    } }
 
     /// Gets the group permissions for the provided user.
-    async fn get_group_permissions(
+    fn get_group_permissions(
         &self,
         _user: &Self::User,
-    ) -> Result<HashSet<Self::Permission>, Self::Error> {
+    ) -> impl std::future::Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {async {
         Ok(HashSet::new())
-    }
+    } }
 
     /// Gets all permissions for the provided user.
-    async fn get_all_permissions(
+    fn get_all_permissions(
         &self,
         user: &Self::User,
-    ) -> Result<HashSet<Self::Permission>, Self::Error> {
+    ) -> impl std::future::Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {async {
         let mut all_perms = HashSet::new();
         all_perms.extend(self.get_user_permissions(user).await?);
         all_perms.extend(self.get_group_permissions(user).await?);
         Ok(all_perms)
-    }
+    } }
 
     /// Returns a result which is `true` when the provided user has the provided
     /// permission and otherwise is `false`.
-    async fn has_perm(
+    fn has_perm(
         &self,
         user: &Self::User,
         perm: Self::Permission,
-    ) -> Result<bool, Self::Error> {
+    ) -> impl std::future::Future<Output = Result<bool, Self::Error>> + Send {async move {
         Ok(self.get_all_permissions(user).await?.contains(&perm))
-    }
+    } }
 }
 
 #[cfg(test)]
