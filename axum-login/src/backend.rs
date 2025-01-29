@@ -1,6 +1,7 @@
 use std::{
     collections::HashSet,
     fmt::{Debug, Display},
+    future::Future,
     hash::Hash,
 };
 
@@ -130,10 +131,13 @@ pub trait AuthnBackend: Clone + Send + Sync {
     fn authenticate(
         &self,
         creds: Self::Credentials,
-    ) -> impl std::future::Future<Output = Result<Option<Self::User>, Self::Error>> + Send;
+    ) -> impl Future<Output = Result<Option<Self::User>, Self::Error>> + Send;
 
     /// Gets the user by provided ID from the backend.
-    fn get_user(&self, user_id: &UserId<Self>) -> impl std::future::Future<Output = Result<Option<Self::User>, Self::Error>> + Send;
+    fn get_user(
+        &self,
+        user_id: &UserId<Self>,
+    ) -> impl Future<Output = Result<Option<Self::User>, Self::Error>> + Send;
 }
 
 /// A backend which can authorize users.
@@ -150,28 +154,30 @@ where
     fn get_user_permissions(
         &self,
         _user: &Self::User,
-    ) -> impl std::future::Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {async {
-        Ok(HashSet::new())
-    } }
+    ) -> impl Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {
+        async { Ok(HashSet::new()) }
+    }
 
     /// Gets the group permissions for the provided user.
     fn get_group_permissions(
         &self,
         _user: &Self::User,
-    ) -> impl std::future::Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {async {
-        Ok(HashSet::new())
-    } }
+    ) -> impl Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {
+        async { Ok(HashSet::new()) }
+    }
 
     /// Gets all permissions for the provided user.
     fn get_all_permissions(
         &self,
         user: &Self::User,
-    ) -> impl std::future::Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {async {
-        let mut all_perms = HashSet::new();
-        all_perms.extend(self.get_user_permissions(user).await?);
-        all_perms.extend(self.get_group_permissions(user).await?);
-        Ok(all_perms)
-    } }
+    ) -> impl Future<Output = Result<HashSet<Self::Permission>, Self::Error>> + Send {
+        async {
+            let mut all_perms = HashSet::new();
+            all_perms.extend(self.get_user_permissions(user).await?);
+            all_perms.extend(self.get_group_permissions(user).await?);
+            Ok(all_perms)
+        }
+    }
 
     /// Returns a result which is `true` when the provided user has the provided
     /// permission and otherwise is `false`.
@@ -179,9 +185,9 @@ where
         &self,
         user: &Self::User,
         perm: Self::Permission,
-    ) -> impl std::future::Future<Output = Result<bool, Self::Error>> + Send {async move {
-        Ok(self.get_all_permissions(user).await?.contains(&perm))
-    } }
+    ) -> impl Future<Output = Result<bool, Self::Error>> + Send {
+        async move { Ok(self.get_all_permissions(user).await?.contains(&perm)) }
+    }
 }
 
 #[cfg(test)]
