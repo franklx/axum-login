@@ -7,16 +7,21 @@ homepage = "https://github.com/maxcountryman/axum-login"
 license = "MIT"
 keywords = ["authentication", "authorization", "login", "axum", "sessions"]
 categories = [
-  "web-programming::http-server",
-  "web-programming",
-  "database",
-  "asynchronous",
+    "web-programming::http-server",
+    "web-programming",
+    "database",
+    "asynchronous",
 ]
 repository = "https://github.com/maxcountryman/axum-login"
 documentation = "https://docs.rs/axum-login"
 readme = "../README.md"
 
 publish = ["elleci"]
+
+[features]
+require-builder = ["dep:pin-project"]
+macros-middleware = ["require-builder"]
+default = ["macros-middleware"]
 
 [dependencies]
 axum = { version = "0.8", default-features = false, features = [
@@ -28,14 +33,16 @@ thiserror = "2"
 tower-cookies = "0.11"
 tower-layer = "0.3"
 tower-service = "0.3"
-tower-sessions = { version = "0.14", default-features = false }
+tower-sessions = { version = "0.15", default-features = false }
 tokio = { version = "1", default-features = false, features = ["sync"] }
 tracing = { version = "0.1", features = ["log"] }
 urlencoding = "2"
 form_urlencoded = "1"
+pin-project = { version = "1", optional = true }
 
 [dev-dependencies]
 axum = "0.8"
+criterion = { version = "0.5", features = ["async_tokio"] }
 mockall = "0.13"
 reqwest = { version = "0.12", features = ["cookies"] }
 serial_test = "3"
@@ -43,5 +50,10 @@ time = "0.3"
 tokio = { version = "1", features = ["full"] }
 tokio-test = "0.4"
 tower = "0.5"
-tower-sessions = { version = "0.14" }
+tower-sessions = { version = "0.15", features = ["memory-store"] }
 tower-sessions-sqlx-store = { version = "0.15", features = ["sqlite"] }
+
+[[bench]]
+name = "middleware_comparison"
+harness = false
+required-features = ["require-builder", "macros-middleware"]
