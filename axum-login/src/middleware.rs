@@ -65,6 +65,47 @@ macro_rules! permission_required {
     }};
 }
 
+/// Permission predicate "any" middleware.
+///
+/// Requires that the any of the specified permissions, either user or group or both,
+/// are assigned to the user.
+#[macro_export]
+macro_rules! permission_required_any {
+    ($backend_type:ty, login_url = $login_url:expr, redirect_field = $redirect_field:expr, $($perm:expr),+ $(,)?) => {{
+        let predicate = $crate::require::PermissionsPredicate::<$backend_type>::new()
+            .with_permissions([$($perm),+])
+            .with_mode($crate::require::PermissionMatch::Any);
+
+        $crate::require::Require::<$backend_type>::builder()
+            .decision(predicate)
+            .unauthenticated(
+                $crate::require::RedirectHandler::new()
+                    .login_url($login_url)
+                    .redirect_field($redirect_field),
+            )
+            .build()
+    }};
+
+    ($backend_type:ty, login_url = $login_url:expr, $($perm:expr),+ $(,)?) => {
+        $crate::permission_required_any!(
+            $backend_type,
+            login_url = $login_url,
+            redirect_field = "next",
+            $($perm),+
+        )
+    };
+
+    ($backend_type:ty, $($perm:expr),+ $(,)?) => {{
+        let predicate = $crate::require::PermissionsPredicate::<$backend_type>::new()
+            .with_permissions([$($perm),+])
+            .with_mode($crate::require::PermissionMatch::Any);
+
+        $crate::require::Require::<$backend_type>::builder()
+            .decision(predicate)
+            .build()
+    }};
+}
+
 /// Predicate middleware.
 ///
 /// Can be specified with a login URL and next redirect field or an alternative
@@ -400,6 +441,40 @@ mod tests {
         let app = Router::new()
             .route("/", axum::routing::get(|| async {}))
             .route_layer(permission_required!(Backend, "test.read", "test.write"))
+            .route(
+                "/login",
+                axum::routing::get(|auth_session: AuthSession<Backend>| async move {
+                    auth_session.login(&User).await.unwrap();
+                }),
+            )
+            .layer(auth_layer!());
+
+        let req = Request::builder().uri("/").body(Body::empty()).unwrap();
+        let res = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+
+        let req = Request::builder()
+            .uri("/login")
+            .body(Body::empty())
+            .unwrap();
+        let res = app.clone().oneshot(req).await.unwrap();
+        let session_cookie =
+            get_session_cookie(&res).expect("Response should have a valid session cookie");
+
+        let req = Request::builder()
+            .uri("/")
+            .header(header::COOKIE, session_cookie)
+            .body(Body::empty())
+            .unwrap();
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_permission_required_any_multiple_permissions() {
+        let app = Router::new()
+            .route("/", axum::routing::get(|| async {}))
+            .route_layer(permission_required_any!(Backend, "test.read", "test.other"))
             .route(
                 "/login",
                 axum::routing::get(|auth_session: AuthSession<Backend>| async move {
